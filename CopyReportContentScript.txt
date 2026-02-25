@@ -13,14 +13,30 @@ $BlankReportWorkspaceID = $NonDownloadableReportWorkspaceID
 # --- Fixed export base path - this just will autodownload a copy of your new report at the end - it will still be available in the service as well ---
 $exportBasePath = "C:\Power BI Backups"
 
-# Ensure required modules are installed, and imports them. If import fails, error and exit early
-$requiredModules = @('MicrosoftPowerBIMgmt' )
-foreach ($module in $requiredModules) {
-    if( -not (Import-Module $module -PassThru -EA ignore) ) {
-       Install-Module -Name $module -Scope CurrentUser -Force
-    }
+# Force TLS 1.2 (required for PSGallery on older systems)
+[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
 
-    Import-Module $Module -ErrorAction 'stop' # In the rare case Install-Module fails, you probably want a terminating error
+# Ensure NuGet provider is available (non-admin, current user)
+if (-not (Get-PackageProvider -Name NuGet -ListAvailable -ErrorAction SilentlyContinue |
+          Where-Object { $_.Version -ge [version]'2.8.5.201' })) {
+    Install-PackageProvider -Name NuGet -MinimumVersion 2.8.5.201 -Scope CurrentUser -Force | Out-Null
+}
+
+# Update PowerShellGet if stuck on 1.0.0.1 (fixes authenticode signature errors)
+$psGetVer = (Get-Module PowerShellGet -ListAvailable | Sort-Object Version -Descending | Select-Object -First 1).Version
+if ($psGetVer -lt [version]'2.0.0') {
+    Install-Module -Name PowerShellGet -Scope CurrentUser -Force -AllowClobber -SkipPublisherCheck
+    Remove-Module PowerShellGet -Force -ErrorAction SilentlyContinue
+    Import-Module PowerShellGet -Force
+}
+
+# Ensure required modules are installed, and imports them. If import fails, error and exit early
+$requiredModules = @( 'MicrosoftPowerBIMgmt' )
+foreach ($module in $requiredModules) {
+    if (-not (Import-Module $module -PassThru -EA Ignore)) {
+        Install-Module -Name $module -Scope CurrentUser -Force -SkipPublisherCheck
+    }
+    Import-Module $module -ErrorAction 'Stop'
 }
 
 # ========================================================
