@@ -1,4 +1,7 @@
-# Copy & Export Non-Downloadable Power BI Reports
+### ** UPDATE ** This only works on legacy JSON PBIX reports. No PBIR.
+#### A universal solution (both Legacy and PBIR) is here: https://github.com/BeSmarterWithData/PowerBI-Universal-Report-Downloader
+
+---
 
 This PowerShell script lets you **clone the visuals and layout** (including bookmarks, report level measures, canvas size, etc) from a *non-downloadable* Power BI report into a *newly published blank report* that is **downloadable**.  
 
